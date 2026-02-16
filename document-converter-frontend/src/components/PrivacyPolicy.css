@@ -1,0 +1,39 @@
+/* AI assisted development */
+.privacy-policy-page {
+  padding: 6rem 2rem;
+  background: white;
+  min-height: 80vh;
+}
+
+.privacy-policy-page .container {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.privacy-policy-page h1 {
+  font-size: 2.5rem;
+  color: #333;
+  margin-bottom: 1rem;
+}
+
+.last-updated {
+  color: #666;
+  margin-bottom: 3rem;
+}
+
+.privacy-policy-page section {
+  margin-bottom: 3rem;
+}
+
+.privacy-policy-page h2 {
+  font-size: 1.5rem;
+  color: #667eea;
+  margin-bottom: 1rem;
+}
+
+.privacy-policy-page p {
+  line-height: 1.8;
+  color: #555;
+}
+
+

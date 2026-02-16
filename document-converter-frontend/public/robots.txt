@@ -1,0 +1,7 @@
+# AI assisted development
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://oneclickdoc.com/sitemap.xml
