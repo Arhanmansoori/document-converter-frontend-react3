@@ -61,14 +61,10 @@ export const convertFile = async (file, endpoint) => {
     const filename = file.name.replace(/\.[^/.]+$/, ".pdf");
     downloadFile(blob, filename);
 
-    // Get latest conversion metadata
-    try {
-      const info = await apiClient.get("/conversion/latest");
-      return info.data;
-    } catch (err) {
-      console.error("Could not fetch conversion info:", err);
-      return null;
-    }
+    // File is downloaded directly from this specific request.
+    // We no longer rely on a global "latest" conversion, which can be
+    // incorrect when multiple users convert documents concurrently.
+    return null;
   } catch (error) {
     if (error.response) {
       // Handle error response
@@ -108,14 +104,7 @@ export const mergePdfs = async (files) => {
     const filename = `merged_${Date.now()}.pdf`;
     downloadFile(blob, filename);
 
-    // Get latest conversion metadata
-    try {
-      const info = await apiClient.get("/conversion/latest");
-      return info.data;
-    } catch (err) {
-      console.error("Could not fetch conversion info:", err);
-      return null;
-    }
+    return null;
   } catch (error) {
     if (error.response) {
       if (error.response.data instanceof Blob) {
@@ -134,18 +123,9 @@ export const mergePdfs = async (files) => {
 };
 
 // Get latest conversion info
-export const getLatestConversion = async () => {
-  try {
-    const response = await apiClient.get("/conversion/latest");
-    return response.data;
-  } catch (err) {
-    if (err.response?.status === 404) {
-      return null; // No conversions yet
-    }
-    console.error("Could not fetch conversion info:", err);
-    return null;
-  }
-};
+// NOTE: The app no longer uses a global "latest conversion" endpoint for
+// downloads, because that becomes unsafe in multi-user environments.
+// Each conversion is downloaded directly from its own response.
 
 // Compress PDF file
 export const compressPdf = async (file, level = "extreme") => {
@@ -165,14 +145,7 @@ export const compressPdf = async (file, level = "extreme") => {
     const filename = file.name.replace(/\.pdf$/i, `_compressed_${level}.pdf`);
     downloadFile(blob, filename);
 
-    // Get latest conversion metadata
-    try {
-      const info = await apiClient.get("/conversion/latest");
-      return info.data;
-    } catch (err) {
-      console.error("Could not fetch conversion info:", err);
-      return null;
-    }
+    return null;
   } catch (error) {
     if (error.response) {
       if (error.response.data instanceof Blob) {
@@ -205,7 +178,7 @@ export const convertPdfToWord = async (file) => {
     });
     const filename = file.name.replace(/\.pdf$/i, ".docx");
     downloadFile(blob, filename);
-    return await getLatestConversion();
+    return null;
   } catch (error) {
     handleApiError(error);
     throw error;
@@ -227,7 +200,7 @@ export const convertPdfToImage = async (file, format = "png") => {
     const blob = new Blob([response.data], { type: `image/${format}` });
     const filename = file.name.replace(/\.pdf$/i, `_page1.${format}`);
     downloadFile(blob, filename);
-    return await getLatestConversion();
+    return null;
   } catch (error) {
     handleApiError(error);
     throw error;
@@ -247,7 +220,7 @@ export const convertImageToPdf = async (file) => {
     const blob = new Blob([response.data], { type: "application/pdf" });
     const filename = file.name.replace(/\.[^/.]+$/, ".pdf");
     downloadFile(blob, filename);
-    return await getLatestConversion();
+    return null;
   } catch (error) {
     handleApiError(error);
     throw error;
@@ -269,7 +242,7 @@ export const splitPdf = async (file, startPage, endPage) => {
     const blob = new Blob([response.data], { type: "application/pdf" });
     const filename = file.name.replace(/\.pdf$/i, `_pages_${startPage}-${endPage}.pdf`);
     downloadFile(blob, filename);
-    return await getLatestConversion();
+    return null;
   } catch (error) {
     handleApiError(error);
     throw error;
@@ -291,7 +264,7 @@ export const rotatePdf = async (file, angle) => {
     const blob = new Blob([response.data], { type: "application/pdf" });
     const filename = file.name.replace(/\.pdf$/i, `_rotated_${angle}.pdf`);
     downloadFile(blob, filename);
-    return await getLatestConversion();
+    return null;
   } catch (error) {
     handleApiError(error);
     throw error;
@@ -313,7 +286,7 @@ export const protectPdf = async (file, password) => {
     const blob = new Blob([response.data], { type: "application/pdf" });
     const filename = file.name.replace(/\.pdf$/i, "_protected.pdf");
     downloadFile(blob, filename);
-    return await getLatestConversion();
+    return null;
   } catch (error) {
     handleApiError(error);
     throw error;
@@ -333,7 +306,7 @@ export const convertPdfToText = async (file) => {
     const blob = new Blob([response.data], { type: "text/plain" });
     const filename = file.name.replace(/\.pdf$/i, ".txt");
     downloadFile(blob, filename);
-    return await getLatestConversion();
+    return null;
   } catch (error) {
     handleApiError(error);
     throw error;
@@ -355,7 +328,7 @@ export const watermarkPdf = async (file, watermarkText) => {
     const blob = new Blob([response.data], { type: "application/pdf" });
     const filename = file.name.replace(/\.pdf$/i, "_watermarked.pdf");
     downloadFile(blob, filename);
-    return await getLatestConversion();
+    return null;
   } catch (error) {
     handleApiError(error);
     throw error;

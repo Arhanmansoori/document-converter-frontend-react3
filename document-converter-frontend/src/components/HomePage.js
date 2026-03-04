@@ -7,127 +7,7 @@ import FeedbackSection from "./FeedbackSection";
 import "./HomePage.css";
 
 const HomePage = () => {
-  const converters = [
-    {
-      type: "word",
-      icon: "📄",
-      title: "Word to PDF",
-      description: "Convert Word documents (.docx) to PDF format instantly",
-      accept: ".docx",
-      endpoint: "/convert/word-to-pdf",
-    },
-    {
-      type: "html",
-      icon: "🌐",
-      title: "HTML to PDF",
-      description: "Transform HTML files into professional PDF documents",
-      accept: ".html",
-      endpoint: "/convert/html-to-pdf",
-    },
-    {
-      type: "excel",
-      icon: "📊",
-      title: "Excel to PDF",
-      description: "Convert Excel spreadsheets to PDF with perfect formatting",
-      accept: ".xlsx,.xls",
-      endpoint: "/convert/excel-to-pdf",
-    },
-    {
-      type: "pdf-image",
-      icon: "🖼️",
-      title: "PDF to Image PDF",
-      description: "Convert PDF files to image-based PDF format",
-      accept: ".pdf",
-      endpoint: "/convert/pdf-to-image-pdf",
-    },
-    {
-      type: "pdf-to-image",
-      icon: "📷",
-      title: "PDF to Image",
-      description: "Extract PDF pages as image files (PNG, JPG)",
-      accept: ".pdf",
-      endpoint: "/convert/pdf-to-image",
-      isPdfToImage: true,
-    },
-    {
-      type: "merge",
-      icon: "🔗",
-      title: "Merge PDF",
-      description: "Combine multiple PDF files into a single document",
-      accept: ".pdf",
-      endpoint: "/merge-pdf",
-      isMerge: true,
-    },
-    {
-      type: "compress",
-      icon: "🗜️",
-      title: "Compress PDF",
-      description: "Reduce PDF file size with different compression levels",
-      accept: ".pdf",
-      endpoint: "/compress-pdf",
-      isCompress: true,
-    },
-    {
-      type: "pdf-to-word",
-      icon: "📝",
-      title: "PDF to Word",
-      description: "Convert PDF documents to editable Word format",
-      accept: ".pdf",
-      endpoint: "/convert/pdf-to-word",
-    },
-    {
-      type: "image-to-pdf",
-      icon: "🖼️",
-      title: "Image to PDF",
-      description: "Convert images (JPG, PNG, etc.) to PDF format",
-      accept: ".jpg,.jpeg,.png,.gif,.bmp",
-      endpoint: "/convert/image-to-pdf",
-    },
-    {
-      type: "split",
-      icon: "✂️",
-      title: "Split PDF",
-      description: "Extract specific pages from a PDF document",
-      accept: ".pdf",
-      endpoint: "/split-pdf",
-      isSplit: true,
-    },
-    {
-      type: "rotate",
-      icon: "🔄",
-      title: "Rotate PDF",
-      description: "Rotate PDF pages by 90, 180, or 270 degrees",
-      accept: ".pdf",
-      endpoint: "/rotate-pdf",
-      isRotate: true,
-    },
-    {
-      type: "protect",
-      icon: "🔐",
-      title: "Protect PDF",
-      description: "Add password protection to your PDF files",
-      accept: ".pdf",
-      endpoint: "/protect-pdf",
-      isProtect: true,
-    },
-    {
-      type: "pdf-to-text",
-      icon: "📄",
-      title: "PDF to Text",
-      description: "Extract text content from PDF documents",
-      accept: ".pdf",
-      endpoint: "/convert/pdf-to-text",
-    },
-    {
-      type: "watermark",
-      icon: "💧",
-      title: "Watermark PDF",
-      description: "Add text watermark to your PDF documents",
-      accept: ".pdf",
-      endpoint: "/watermark-pdf",
-      isWatermark: true,
-    },
-  ];
+  const { CONVERTERS } = require("../config/converters");
 
   return (
     <div className="homepage">
@@ -206,27 +86,17 @@ const HomePage = () => {
           </div>
 
           <div className="converters-grid">
-            {converters.map((converter, index) => (
+            {CONVERTERS.map((converter, index) => (
               <div 
-                key={converter.type} 
+                key={converter.slug} 
                 className="converter-wrapper"
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
                 <ConverterCard
-                  type={converter.type}
+                  slug={converter.slug}
                   icon={converter.icon}
                   title={converter.title}
                   description={converter.description}
-                  accept={converter.accept}
-                  endpoint={converter.endpoint}
-                  isMerge={converter.isMerge || false}
-                  isCompress={converter.isCompress || false}
-                  isSplit={converter.isSplit || false}
-                  isRotate={converter.isRotate || false}
-                  isProtect={converter.isProtect || false}
-                  isWatermark={converter.isWatermark || false}
-                  isPdfToImage={converter.isPdfToImage || false}
-                  color={converter.color}
                 />
               </div>
             ))}
