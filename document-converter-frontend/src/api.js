@@ -1,7 +1,12 @@
 // AI assisted development
 import axios from "axios";
 
-const API_BASE = process.env.REACT_APP_API_URL || "http://20.255.56.122:8000";
+// In production (e.g. Vercel), use relative /api so requests are proxied to the backend (avoids mixed content).
+// In development, use REACT_APP_API_URL or fallback to localhost.
+const API_BASE =
+  process.env.NODE_ENV === "production"
+    ? "/api"
+    : process.env.REACT_APP_API_URL || "http://127.0.0.1:8000";
 
 // Create axios instance with default config
 const apiClient = axios.create({
