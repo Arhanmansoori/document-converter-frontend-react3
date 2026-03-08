@@ -1,7 +1,7 @@
 // AI assisted development
 import axios from "axios";
 
-const API_BASE = process.env.REACT_APP_API_URL || "http://127.0.0.1:8000";
+const API_BASE = process.env.REACT_APP_API_URL || "http://20.255.56.122:8000";
 
 // Create axios instance with default config
 const apiClient = axios.create({
