@@ -133,6 +133,16 @@ export const CONVERTERS = [
     endpoint: "/watermark-pdf",
     isWatermark: true,
   },
+  {
+    slug: "summarize-pdf",
+    type: "summarize-pdf",
+    icon: "📄",
+    title: "Summarize PDF",
+    description: "Upload a PDF and get an AI-generated summary instantly",
+    accept: ".pdf",
+    endpoint: "/summarize-pdf",
+    isSummarize: true,
+  },
 ];
 
 export const findConverterBySlug = (slug) =>

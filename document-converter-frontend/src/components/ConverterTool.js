@@ -1,4 +1,3 @@
-// Full-page converter tool reused across routes
 import React, { useState } from "react";
 import {
   convertFile,
@@ -12,6 +11,7 @@ import {
   protectPdf,
   convertPdfToText,
   watermarkPdf,
+  summarizePdf,
 } from "../api";
 import {
   trackConversion,
@@ -33,11 +33,13 @@ const ConverterTool = ({
   isProtect = false,
   isWatermark = false,
   isPdfToImage = false,
+  isSummarize = false,
 }) => {
   const [file, setFile] = useState(null);
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [summaryResult, setSummaryResult] = useState("");
   const [compressionLevel, setCompressionLevel] = useState("extreme");
   const [startPage, setStartPage] = useState(1);
   const [endPage, setEndPage] = useState(1);
@@ -49,33 +51,40 @@ const ConverterTool = ({
   const handleFileChange = (e) => {
     if (isMerge) {
       const selectedFiles = Array.from(e.target.files);
-      const pdfFiles = selectedFiles.filter((file) =>
-        file.name.endsWith(".pdf")
+      const pdfFiles = selectedFiles.filter((selectedFile) =>
+        selectedFile.name.toLowerCase().endsWith(".pdf")
       );
 
       if (pdfFiles.length !== selectedFiles.length) {
-        setMessage("⚠️ Some files were skipped. Only PDF files are allowed.");
+        setMessage("?? Some files were skipped. Only PDF files are allowed.");
       } else {
         setMessage("");
       }
 
       if (pdfFiles.length < 2) {
-        setMessage("❌ Please select at least 2 PDF files");
+        setMessage("? Please select at least 2 PDF files");
         setFiles([]);
         return;
       }
 
       setFiles(pdfFiles);
-      pdfFiles.forEach((file) => {
-        trackFileUpload("pdf", file.size);
+      pdfFiles.forEach((selectedFile) => {
+        trackFileUpload("pdf", selectedFile.size);
       });
-    } else {
-      const selectedFile = e.target.files[0];
-      if (selectedFile) {
-        setFile(selectedFile);
-        setMessage("");
-        trackFileUpload(selectedFile.name.split(".").pop(), selectedFile.size);
+      return;
+    }
+
+    const selectedFile = e.target.files[0];
+    if (selectedFile) {
+      setFile(selectedFile);
+      setMessage("");
+      if (isSummarize) {
+        setSummaryResult("");
       }
+      trackFileUpload(
+        selectedFile.name.split(".").pop() || "unknown",
+        selectedFile.size
+      );
     }
   };
 
@@ -84,133 +93,136 @@ const ConverterTool = ({
 
     if (isMerge) {
       if (files.length < 2) {
-        setMessage("❌ Please select at least 2 PDF files");
+        setMessage("? Please select at least 2 PDF files");
         return;
       }
     } else if (isSplit) {
       if (!file) {
-        setMessage("❌ Please select a PDF file first");
+        setMessage("? Please select a PDF file first");
         return;
       }
       if (startPage < 1 || endPage < startPage) {
-        setMessage("❌ Invalid page range");
+        setMessage("? Invalid page range");
         return;
       }
     } else if (isProtect) {
       if (!file) {
-        setMessage("❌ Please select a PDF file first");
+        setMessage("? Please select a PDF file first");
         return;
       }
       if (!password || password.length < 3) {
-        setMessage("❌ Password must be at least 3 characters");
+        setMessage("? Password must be at least 3 characters");
         return;
       }
     } else if (isWatermark) {
       if (!file) {
-        setMessage("❌ Please select a PDF file first");
+        setMessage("? Please select a PDF file first");
         return;
       }
       if (!watermarkText || watermarkText.trim().length === 0) {
-        setMessage("❌ Please enter watermark text");
+        setMessage("? Please enter watermark text");
         return;
       }
-    } else if (isCompress || isRotate) {
+    } else if (isCompress || isRotate || isSummarize) {
       if (!file) {
-        setMessage("❌ Please select a PDF file first");
+        setMessage("? Please select a PDF file first");
         return;
       }
-    } else {
-      if (!file) {
-        setMessage("❌ Please select a file first");
-        return;
-      }
+    } else if (!file) {
+      setMessage("? Please select a file first");
+      return;
     }
 
     setLoading(true);
-    setMessage(`⏳ Processing, please wait...`);
+    setMessage("? Processing, please wait...");
 
     try {
       if (isMerge) {
         await mergePdfs(files);
-        setMessage("✅ Merge successful! File downloaded.");
+        setMessage("? Merge successful! File downloaded.");
         trackConversion("merge-pdf", files.map((f) => f.name).join(", "));
         setFiles([]);
       } else if (isCompress) {
         await compressPdf(file, compressionLevel);
         setMessage(
-          `✅ Compression successful! File downloaded (${compressionLevel} level).`
+          `? Compression successful! File downloaded (${compressionLevel} level).`
         );
         trackConversion("compress-pdf", file.name);
         setFile(null);
       } else if (type === "pdf-to-word") {
         await convertPdfToWord(file);
-        setMessage("✅ Conversion successful! File downloaded.");
+        setMessage("? Conversion successful! File downloaded.");
         trackConversion("pdf-to-word", file.name);
         setFile(null);
       } else if (type === "image-to-pdf") {
         await convertImageToPdf(file);
-        setMessage("✅ Conversion successful! File downloaded.");
+        setMessage("? Conversion successful! File downloaded.");
         trackConversion("image-to-pdf", file.name);
         setFile(null);
       } else if (isPdfToImage || type === "pdf-to-image") {
         await convertPdfToImage(file, imageFormat);
         setMessage(
-          `✅ Image extraction successful! File downloaded (${imageFormat.toUpperCase()}).`
+          `? Image extraction successful! File downloaded (${imageFormat.toUpperCase()}).`
         );
         trackConversion("pdf-to-image", file.name);
         setFile(null);
       } else if (isSplit) {
         await splitPdf(file, startPage, endPage);
         setMessage(
-          `✅ PDF split successful! Pages ${startPage}-${endPage} extracted.`
+          `? PDF split successful! Pages ${startPage}-${endPage} extracted.`
         );
         trackConversion("split-pdf", file.name);
         setFile(null);
       } else if (isRotate) {
         await rotatePdf(file, rotateAngle);
-        setMessage(`✅ PDF rotated successfully! (${rotateAngle}°)`);
+        setMessage(`? PDF rotated successfully! (${rotateAngle}�)`);
         trackConversion("rotate-pdf", file.name);
         setFile(null);
       } else if (isProtect) {
         await protectPdf(file, password);
-        setMessage("✅ PDF protected successfully! File downloaded.");
+        setMessage("? PDF protected successfully! File downloaded.");
         trackConversion("protect-pdf", file.name);
         setFile(null);
         setPassword("");
       } else if (type === "pdf-to-text") {
         await convertPdfToText(file);
-        setMessage("✅ Text extraction successful! File downloaded.");
+        setMessage("? Text extraction successful! File downloaded.");
         trackConversion("pdf-to-text", file.name);
         setFile(null);
       } else if (isWatermark) {
         await watermarkPdf(file, watermarkText);
-        setMessage("✅ Watermark added successfully! File downloaded.");
+        setMessage("? Watermark added successfully! File downloaded.");
         trackConversion("watermark-pdf", file.name);
         setFile(null);
         setWatermarkText("");
+      } else if (isSummarize) {
+        const result = await summarizePdf(file);
+        setSummaryResult(result.summary || "");
+        setMessage("? PDF summary generated successfully!");
+        trackConversion("summarize-pdf", file.name);
       } else {
         await convertFile(file, endpoint);
-        setMessage("✅ Conversion successful! File downloaded.");
+        setMessage("? Conversion successful! File downloaded.");
         trackConversion(type, file.name);
         setFile(null);
       }
     } catch (error) {
       console.error("Error:", error);
-      let errorMessage = "❌ Operation failed. Please try again.";
+      let errorMessage = "? Operation failed. Please try again.";
 
       if (error.message) {
-        errorMessage = `❌ ${error.message}`;
+        errorMessage = `? ${error.message}`;
       } else if (error.response?.data?.detail) {
-        errorMessage = `❌ ${error.response.data.detail}`;
+        errorMessage = `? ${error.response.data.detail}`;
       } else if (error.response?.status === 400) {
-        errorMessage = "❌ Invalid file type. Please check the file format.";
+        errorMessage = "? Invalid file type. Please check the file format.";
       } else if (error.response?.status === 500) {
-        errorMessage = "❌ Server error. Please try again later.";
+        errorMessage = "? Server error. Please try again later.";
       } else if (error.code === "ECONNABORTED") {
-        errorMessage = "❌ Request timeout. File might be too large.";
+        errorMessage = "? Request timeout. File might be too large.";
       } else if (error.message?.includes("Network")) {
         errorMessage =
-          "❌ Network error. Please check your connection and ensure backend is running.";
+          "? Network error. Please check your connection and ensure backend is running.";
       }
 
       setMessage(errorMessage);
@@ -223,10 +235,36 @@ const ConverterTool = ({
     const newFiles = files.filter((_, i) => i !== index);
     setFiles(newFiles);
     if (newFiles.length < 2) {
-      setMessage("⚠️ You need at least 2 files to merge");
+      setMessage("?? You need at least 2 files to merge");
     } else {
       setMessage("");
     }
+  };
+
+  const getButtonText = () => {
+    if (loading) {
+      if (isMerge) return "Merging...";
+      if (isCompress) return "Compressing...";
+      if (isSplit) return "Splitting...";
+      if (isRotate) return "Rotating...";
+      if (isProtect) return "Protecting...";
+      if (isWatermark) return "Adding Watermark...";
+      if (isSummarize) return "Summarizing...";
+      if (type === "pdf-to-text") return "Extracting...";
+      if (isPdfToImage || type === "pdf-to-image") return "Extracting Image...";
+      return "Converting...";
+    }
+
+    if (isMerge) return "Merge PDFs";
+    if (isCompress) return "Compress PDF";
+    if (isSplit) return "Split PDF";
+    if (isRotate) return "Rotate PDF";
+    if (isProtect) return "Protect PDF";
+    if (isWatermark) return "Add Watermark";
+    if (isSummarize) return "Summarize PDF";
+    if (type === "pdf-to-text") return "Extract Text";
+    if (isPdfToImage || type === "pdf-to-image") return "Extract Image";
+    return "Convert";
   };
 
   return (
@@ -239,7 +277,7 @@ const ConverterTool = ({
             window.location.href = "/";
           }}
         >
-          ← Back to all tools
+          ? Back to all tools
         </button>
         <h1>
           {icon} {title}
@@ -260,7 +298,7 @@ const ConverterTool = ({
           <label htmlFor={`file-${type}`} className="file-label">
             {isMerge
               ? "Choose PDF Files (Select 2 or more)"
-              : isCompress
+              : isCompress || isSplit || isRotate || isProtect || isWatermark || isSummarize
               ? file
                 ? file.name
                 : "Choose PDF File"
@@ -296,9 +334,7 @@ const ConverterTool = ({
                 id="start-page"
                 min="1"
                 value={startPage}
-                onChange={(e) =>
-                  setStartPage(parseInt(e.target.value) || 1)
-                }
+                onChange={(e) => setStartPage(parseInt(e.target.value, 10) || 1)}
                 className="page-input"
               />
             </div>
@@ -309,7 +345,7 @@ const ConverterTool = ({
                 id="end-page"
                 min={startPage}
                 value={endPage}
-                onChange={(e) => setEndPage(parseInt(e.target.value) || 1)}
+                onChange={(e) => setEndPage(parseInt(e.target.value, 10) || 1)}
                 className="page-input"
               />
             </div>
@@ -322,12 +358,12 @@ const ConverterTool = ({
             <select
               id="rotate-angle"
               value={rotateAngle}
-              onChange={(e) => setRotateAngle(parseInt(e.target.value))}
+              onChange={(e) => setRotateAngle(parseInt(e.target.value, 10))}
               className="compression-select"
             >
-              <option value={90}>90° (Clockwise)</option>
-              <option value={180}>180° (Upside Down)</option>
-              <option value={270}>270° (Counter-clockwise)</option>
+              <option value={90}>90� (Clockwise)</option>
+              <option value={180}>180� (Upside Down)</option>
+              <option value={270}>270� (Counter-clockwise)</option>
             </select>
           </div>
         )}
@@ -382,15 +418,15 @@ const ConverterTool = ({
           <div className="file-list">
             <h4>Selected Files ({files.length}):</h4>
             <ul>
-              {files.map((file, index) => (
-                <li key={index} className="file-item">
-                  <span>{file.name}</span>
+              {files.map((selectedFile, index) => (
+                <li key={`${selectedFile.name}-${index}`} className="file-item">
+                  <span>{selectedFile.name}</span>
                   <button
                     type="button"
                     onClick={() => removeFile(index)}
                     className="remove-button"
                   >
-                    ✕
+                    ?
                   </button>
                 </li>
               ))}
@@ -405,55 +441,20 @@ const ConverterTool = ({
             loading ||
             (isSplit && (startPage < 1 || endPage < startPage)) ||
             (isProtect && (!password || password.length < 3)) ||
-            (isWatermark &&
-              (!watermarkText || watermarkText.trim().length === 0))
+            (isWatermark && (!watermarkText || watermarkText.trim().length === 0))
           }
           className="convert-button"
         >
-          {loading
-            ? isMerge
-              ? "Merging..."
-              : isCompress
-              ? "Compressing..."
-              : isSplit
-              ? "Splitting..."
-              : isRotate
-              ? "Rotating..."
-              : isProtect
-              ? "Protecting..."
-              : isWatermark
-              ? "Adding Watermark..."
-              : type === "pdf-to-text"
-              ? "Extracting..."
-              : isPdfToImage || type === "pdf-to-image"
-              ? "Extracting Image..."
-              : "Converting..."
-            : isMerge
-            ? "Merge PDFs"
-            : isCompress
-            ? "Compress PDF"
-            : isSplit
-            ? "Split PDF"
-            : isRotate
-            ? "Rotate PDF"
-            : isProtect
-            ? "Protect PDF"
-            : isWatermark
-            ? "Add Watermark"
-            : type === "pdf-to-text"
-            ? "Extract Text"
-            : isPdfToImage || type === "pdf-to-image"
-            ? "Extract Image"
-            : "Convert"}
+          {getButtonText()}
         </button>
       </form>
 
       {message && (
         <div
           className={`message ${
-            message.includes("✅")
+            message.includes("?")
               ? "success"
-              : message.includes("⚠️")
+              : message.includes("??")
               ? "warning"
               : "error"
           }`}
@@ -461,9 +462,31 @@ const ConverterTool = ({
           {message}
         </div>
       )}
+
+      {isSummarize && summaryResult && (
+        <div className="summary-result">
+          <div className="summary-result-header">
+            <h3>Summary</h3>
+            <button
+              type="button"
+              className="summary-copy-button"
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(summaryResult);
+                  setMessage("? Summary copied to clipboard.");
+                } catch {
+                  setMessage("?? Could not copy summary. Please copy it manually.");
+                }
+              }}
+            >
+              Copy Summary
+            </button>
+          </div>
+          <p>{summaryResult}</p>
+        </div>
+      )}
     </div>
   );
 };
 
 export default ConverterTool;
-

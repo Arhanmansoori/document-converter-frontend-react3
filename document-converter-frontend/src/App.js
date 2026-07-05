@@ -65,6 +65,7 @@ function ToolRouteWrapper() {
       isProtect={converter.isProtect || false}
       isWatermark={converter.isWatermark || false}
       isPdfToImage={converter.isPdfToImage || false}
+      isSummarize={converter.isSummarize || false}
     />
   );
 }

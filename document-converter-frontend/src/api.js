@@ -340,6 +340,25 @@ export const watermarkPdf = async (file, watermarkText) => {
   }
 };
 
+export const summarizePdf = async (file) => {
+  if (!file || !file.name.toLowerCase().endsWith(".pdf")) {
+    throw new Error("Only PDF files are allowed");
+  }
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  try {
+    const response = await apiClient.post("/summarize-pdf", formData);
+    return response.data;
+  } catch (error) {
+    if (error.response?.data?.detail) {
+      throw new Error(error.response.data.detail);
+    }
+    throw new Error(error.message || "PDF summarization failed");
+  }
+};
+
 // Helper function for error handling
 const handleApiError = (error) => {
   if (error.response?.data instanceof Blob) {
