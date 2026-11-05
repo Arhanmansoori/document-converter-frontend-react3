@@ -1,4 +1,4 @@
-﻿// AI assisted development
+// AI assisted development
 import axios from "axios";
 
 const API_BASE =

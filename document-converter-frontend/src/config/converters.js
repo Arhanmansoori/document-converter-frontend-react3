@@ -1,4 +1,4 @@
-﻿// Central configuration for all conversion tools
+// Central configuration for all conversion tools
 export const CONVERTERS = [
   {
     slug: "word-to-pdf",

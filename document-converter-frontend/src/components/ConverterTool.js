@@ -1,4 +1,4 @@
-﻿// Full-page converter tool reused across routes
+// Full-page converter tool reused across routes
 import React, { useState } from "react";
 import {
   convertFile,
