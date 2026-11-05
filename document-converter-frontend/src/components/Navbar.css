@@ -49,7 +49,23 @@
 
 .brand-text {
   font-size: 1.5rem;
+  line-height: 1.1;
 }
+
+.brand-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.brand-byline {
+  color: #245ab8;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.035em;
+  -webkit-text-fill-color: #245ab8;
+}
+
 
 .navbar-menu {
   display: flex;
@@ -163,6 +179,7 @@
     display: flex;
     align-items: center;
   }
+
 }
 
 /* Small Mobile */

@@ -27,7 +27,10 @@ const Navbar = () => {
       <div className="navbar-container">
         <div className="navbar-brand" onClick={() => scrollToSection("hero")}>
           <span className="brand-icon">📄</span>
-          <span className="brand-text">OneClickDoc</span>
+          <span className="brand-copy">
+            <span className="brand-text">OneClickDoc</span>
+            <span className="brand-byline">by Infrix Technologies</span>
+          </span>
         </div>
         
         <button

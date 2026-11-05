@@ -205,7 +205,7 @@ const HomePage = () => {
               <h2 className="section-title">About OneClickDoc</h2>
               <p className="about-description">
                 OneClickDoc is a cutting-edge document conversion platform 
-                designed to simplify your workflow. Launched in 2026, we're 
+                by Infrix Technologies, designed to simplify your workflow. Launched in 2026, we're
                 committed to providing fast, reliable, and secure document 
                 processing solutions.
               </p>

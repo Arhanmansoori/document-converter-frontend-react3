@@ -1,5 +1,6 @@
 // AI assisted development
 import React from "react";
+import InfrixMark from "./InfrixMark";
 import "./Footer.css";
 
 const Footer = () => {
@@ -38,9 +39,6 @@ const Footer = () => {
                 </a>
                 <a href="https://facebook.com/oneclickdoc" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
                   <span className="social-icon">📘</span>
-                </a>
-                <a href="https://linkedin.com/company/oneclickdoc" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
-                  <span className="social-icon">💼</span>
                 </a>
               </div>
             </div>
@@ -116,11 +114,15 @@ const Footer = () => {
 
         <div className="footer-bottom">
           <p>
-            &copy; {currentYear} OneClickDoc. All rights reserved. | Launching 2026
+            &copy; {currentYear} OneClickDoc by Infrix Technologies. All rights reserved. | Launching 2026
           </p>
           <p className="footer-tagline">
             Made with ❤️ for seamless document conversion
           </p>
+          <a className="footer-company-link" href="https://www.linkedin.com/company/144873984/admin/dashboard/" target="_blank" rel="noopener noreferrer">
+            <InfrixMark className="footer-company-mark" />
+            OneClickDoc by Infrix Technologies
+          </a>
         </div>
       </div>
     </footer>

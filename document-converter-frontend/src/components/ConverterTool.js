@@ -1,10 +1,11 @@
-// Full-page converter tool reused across routes
+﻿// Full-page converter tool reused across routes
 import React, { useState } from "react";
 import {
   convertFile,
   mergePdfs,
   compressPdf,
   convertPdfToWord,
+  convertPdfToPowerPoint,
   convertImageToPdf,
   convertPdfToImage,
   splitPdf,
@@ -12,6 +13,8 @@ import {
   protectPdf,
   convertPdfToText,
   watermarkPdf,
+  translatePdf,
+  convertCsvToParquet,
 } from "../api";
 import {
   trackConversion,
@@ -33,11 +36,13 @@ const ConverterTool = ({
   isProtect = false,
   isWatermark = false,
   isPdfToImage = false,
+  isTranslate = false,
 }) => {
   const [file, setFile] = useState(null);
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [translatedText, setTranslatedText] = useState("");
   const [compressionLevel, setCompressionLevel] = useState("extreme");
   const [startPage, setStartPage] = useState(1);
   const [endPage, setEndPage] = useState(1);
@@ -45,37 +50,42 @@ const ConverterTool = ({
   const [password, setPassword] = useState("");
   const [watermarkText, setWatermarkText] = useState("");
   const [imageFormat, setImageFormat] = useState("png");
+  const [sourceLanguage, setSourceLanguage] = useState("auto");
+  const [targetLanguage, setTargetLanguage] = useState("English");
 
   const handleFileChange = (e) => {
+    setTranslatedText("");
+
     if (isMerge) {
       const selectedFiles = Array.from(e.target.files);
-      const pdfFiles = selectedFiles.filter((file) =>
-        file.name.endsWith(".pdf")
+      const pdfFiles = selectedFiles.filter((selectedFile) =>
+        selectedFile.name.toLowerCase().endsWith(".pdf")
       );
 
       if (pdfFiles.length !== selectedFiles.length) {
-        setMessage("⚠️ Some files were skipped. Only PDF files are allowed.");
+        setMessage("Some files were skipped. Only PDF files are allowed.");
       } else {
         setMessage("");
       }
 
       if (pdfFiles.length < 2) {
-        setMessage("❌ Please select at least 2 PDF files");
+        setMessage("Please select at least 2 PDF files.");
         setFiles([]);
         return;
       }
 
       setFiles(pdfFiles);
-      pdfFiles.forEach((file) => {
-        trackFileUpload("pdf", file.size);
+      pdfFiles.forEach((selectedFile) => {
+        trackFileUpload("pdf", selectedFile.size);
       });
-    } else {
-      const selectedFile = e.target.files[0];
-      if (selectedFile) {
-        setFile(selectedFile);
-        setMessage("");
-        trackFileUpload(selectedFile.name.split(".").pop(), selectedFile.size);
-      }
+      return;
+    }
+
+    const selectedFile = e.target.files[0];
+    if (selectedFile) {
+      setFile(selectedFile);
+      setMessage("");
+      trackFileUpload(selectedFile.name.split(".").pop(), selectedFile.size);
     }
   };
 
@@ -84,136 +94,115 @@ const ConverterTool = ({
 
     if (isMerge) {
       if (files.length < 2) {
-        setMessage("❌ Please select at least 2 PDF files");
+        setMessage("Please select at least 2 PDF files.");
         return;
       }
-    } else if (isSplit) {
-      if (!file) {
-        setMessage("❌ Please select a PDF file first");
-        return;
-      }
-      if (startPage < 1 || endPage < startPage) {
-        setMessage("❌ Invalid page range");
-        return;
-      }
-    } else if (isProtect) {
-      if (!file) {
-        setMessage("❌ Please select a PDF file first");
-        return;
-      }
-      if (!password || password.length < 3) {
-        setMessage("❌ Password must be at least 3 characters");
-        return;
-      }
-    } else if (isWatermark) {
-      if (!file) {
-        setMessage("❌ Please select a PDF file first");
-        return;
-      }
-      if (!watermarkText || watermarkText.trim().length === 0) {
-        setMessage("❌ Please enter watermark text");
-        return;
-      }
-    } else if (isCompress || isRotate) {
-      if (!file) {
-        setMessage("❌ Please select a PDF file first");
-        return;
-      }
-    } else {
-      if (!file) {
-        setMessage("❌ Please select a file first");
-        return;
-      }
+    } else if (!file) {
+      setMessage(isTranslate ? "Please select a PDF file first." : "Please select a file first.");
+      return;
+    }
+
+    if (isSplit && (startPage < 1 || endPage < startPage)) {
+      setMessage("Invalid page range.");
+      return;
+    }
+
+    if (isProtect && (!password || password.length < 3)) {
+      setMessage("Password must be at least 3 characters.");
+      return;
+    }
+
+    if (isWatermark && (!watermarkText || !watermarkText.trim())) {
+      setMessage("Please enter watermark text.");
+      return;
+    }
+
+    if (isTranslate && (!targetLanguage || !targetLanguage.trim())) {
+      setMessage("Please enter a target language.");
+      return;
     }
 
     setLoading(true);
-    setMessage(`⏳ Processing, please wait...`);
+    setMessage("Processing, please wait...");
+    setTranslatedText("");
 
     try {
       if (isMerge) {
         await mergePdfs(files);
-        setMessage("✅ Merge successful! File downloaded.");
-        trackConversion("merge-pdf", files.map((f) => f.name).join(", "));
+        setMessage("Merge successful. File downloaded.");
+        trackConversion("merge-pdf", files.map((selectedFile) => selectedFile.name).join(", "));
         setFiles([]);
       } else if (isCompress) {
         await compressPdf(file, compressionLevel);
-        setMessage(
-          `✅ Compression successful! File downloaded (${compressionLevel} level).`
-        );
+        setMessage(`Compression successful. File downloaded (${compressionLevel} level).`);
         trackConversion("compress-pdf", file.name);
         setFile(null);
       } else if (type === "pdf-to-word") {
         await convertPdfToWord(file);
-        setMessage("✅ Conversion successful! File downloaded.");
+        setMessage("Conversion successful. File downloaded.");
         trackConversion("pdf-to-word", file.name);
         setFile(null);
+      } else if (type === "pdf-to-powerpoint") {
+        await convertPdfToPowerPoint(file);
+        setMessage("PowerPoint presentation created. File downloaded.");
+        trackConversion("pdf-to-powerpoint", file.name);
+        setFile(null);
+      } else if (type === "csv-to-parquet") {
+        await convertCsvToParquet(file);
+        setMessage("CSV to Parquet conversion successful. File downloaded.");
+        trackConversion("csv-to-parquet", file.name);
+        setFile(null);
+      } else if (isTranslate || type === "translate-pdf") {
+        const result = await translatePdf(file, targetLanguage, sourceLanguage);
+        setTranslatedText(result.translated_text || "");
+        setMessage(`Translation successful. Detected source: ${result.source_language}. Target: ${result.target_language}.`);
+        trackConversion("translate-pdf", file.name);
       } else if (type === "image-to-pdf") {
         await convertImageToPdf(file);
-        setMessage("✅ Conversion successful! File downloaded.");
+        setMessage("Conversion successful. File downloaded.");
         trackConversion("image-to-pdf", file.name);
         setFile(null);
       } else if (isPdfToImage || type === "pdf-to-image") {
         await convertPdfToImage(file, imageFormat);
-        setMessage(
-          `✅ Image extraction successful! File downloaded (${imageFormat.toUpperCase()}).`
-        );
+        setMessage(`Image extraction successful. File downloaded (${imageFormat.toUpperCase()}).`);
         trackConversion("pdf-to-image", file.name);
         setFile(null);
       } else if (isSplit) {
         await splitPdf(file, startPage, endPage);
-        setMessage(
-          `✅ PDF split successful! Pages ${startPage}-${endPage} extracted.`
-        );
+        setMessage(`PDF split successful. Pages ${startPage}-${endPage} extracted.`);
         trackConversion("split-pdf", file.name);
         setFile(null);
       } else if (isRotate) {
         await rotatePdf(file, rotateAngle);
-        setMessage(`✅ PDF rotated successfully! (${rotateAngle}°)`);
+        setMessage(`PDF rotated successfully (${rotateAngle} degrees).`);
         trackConversion("rotate-pdf", file.name);
         setFile(null);
       } else if (isProtect) {
         await protectPdf(file, password);
-        setMessage("✅ PDF protected successfully! File downloaded.");
+        setMessage("PDF protected successfully. File downloaded.");
         trackConversion("protect-pdf", file.name);
         setFile(null);
         setPassword("");
       } else if (type === "pdf-to-text") {
         await convertPdfToText(file);
-        setMessage("✅ Text extraction successful! File downloaded.");
+        setMessage("Text extraction successful. File downloaded.");
         trackConversion("pdf-to-text", file.name);
         setFile(null);
       } else if (isWatermark) {
         await watermarkPdf(file, watermarkText);
-        setMessage("✅ Watermark added successfully! File downloaded.");
+        setMessage("Watermark added successfully. File downloaded.");
         trackConversion("watermark-pdf", file.name);
         setFile(null);
         setWatermarkText("");
       } else {
         await convertFile(file, endpoint);
-        setMessage("✅ Conversion successful! File downloaded.");
+        setMessage("Conversion successful. File downloaded.");
         trackConversion(type, file.name);
         setFile(null);
       }
     } catch (error) {
       console.error("Error:", error);
-      let errorMessage = "❌ Operation failed. Please try again.";
-
-      if (error.message) {
-        errorMessage = `❌ ${error.message}`;
-      } else if (error.response?.data?.detail) {
-        errorMessage = `❌ ${error.response.data.detail}`;
-      } else if (error.response?.status === 400) {
-        errorMessage = "❌ Invalid file type. Please check the file format.";
-      } else if (error.response?.status === 500) {
-        errorMessage = "❌ Server error. Please try again later.";
-      } else if (error.code === "ECONNABORTED") {
-        errorMessage = "❌ Request timeout. File might be too large.";
-      } else if (error.message?.includes("Network")) {
-        errorMessage =
-          "❌ Network error. Please check your connection and ensure backend is running.";
-      }
-
-      setMessage(errorMessage);
+      setMessage(error.message || "Operation failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -223,11 +212,63 @@ const ConverterTool = ({
     const newFiles = files.filter((_, i) => i !== index);
     setFiles(newFiles);
     if (newFiles.length < 2) {
-      setMessage("⚠️ You need at least 2 files to merge");
+      setMessage("You need at least 2 files to merge.");
     } else {
       setMessage("");
     }
   };
+
+  const isSubmitDisabled =
+    (isMerge ? files.length < 2 : !file) ||
+    loading ||
+    (isSplit && (startPage < 1 || endPage < startPage)) ||
+    (isProtect && (!password || password.length < 3)) ||
+    (isWatermark && (!watermarkText || !watermarkText.trim())) ||
+    (isTranslate && (!targetLanguage || !targetLanguage.trim()));
+
+  const submitLabel = loading
+    ? isMerge
+      ? "Merging..."
+      : isCompress
+      ? "Compressing..."
+      : isSplit
+      ? "Splitting..."
+      : isRotate
+      ? "Rotating..."
+      : isProtect
+      ? "Protecting..."
+      : isWatermark
+      ? "Adding Watermark..."
+      : isTranslate
+      ? "Translating..."
+      : type === "pdf-to-text"
+      ? "Extracting..."
+      : isPdfToImage || type === "pdf-to-image"
+      ? "Extracting Image..."
+      : type === "csv-to-parquet"
+      ? "Converting CSV..."
+      : "Converting..."
+    : isMerge
+    ? "Merge PDFs"
+    : isCompress
+    ? "Compress PDF"
+    : isSplit
+    ? "Split PDF"
+    : isRotate
+    ? "Rotate PDF"
+    : isProtect
+    ? "Protect PDF"
+    : isWatermark
+    ? "Add Watermark"
+    : isTranslate
+    ? "Translate PDF"
+    : type === "pdf-to-text"
+    ? "Extract Text"
+    : isPdfToImage || type === "pdf-to-image"
+    ? "Extract Image"
+    : type === "csv-to-parquet"
+    ? "Convert to Parquet"
+    : "Convert";
 
   return (
     <div className="converter-page">
@@ -239,7 +280,7 @@ const ConverterTool = ({
             window.location.href = "/";
           }}
         >
-          ← Back to all tools
+          Back to all tools
         </button>
         <h1>
           {icon} {title}
@@ -260,10 +301,6 @@ const ConverterTool = ({
           <label htmlFor={`file-${type}`} className="file-label">
             {isMerge
               ? "Choose PDF Files (Select 2 or more)"
-              : isCompress
-              ? file
-                ? file.name
-                : "Choose PDF File"
               : file
               ? file.name
               : `Choose File (${accept})`}
@@ -296,9 +333,7 @@ const ConverterTool = ({
                 id="start-page"
                 min="1"
                 value={startPage}
-                onChange={(e) =>
-                  setStartPage(parseInt(e.target.value) || 1)
-                }
+                onChange={(e) => setStartPage(parseInt(e.target.value, 10) || 1)}
                 className="page-input"
               />
             </div>
@@ -309,7 +344,7 @@ const ConverterTool = ({
                 id="end-page"
                 min={startPage}
                 value={endPage}
-                onChange={(e) => setEndPage(parseInt(e.target.value) || 1)}
+                onChange={(e) => setEndPage(parseInt(e.target.value, 10) || 1)}
                 className="page-input"
               />
             </div>
@@ -322,12 +357,12 @@ const ConverterTool = ({
             <select
               id="rotate-angle"
               value={rotateAngle}
-              onChange={(e) => setRotateAngle(parseInt(e.target.value))}
+              onChange={(e) => setRotateAngle(parseInt(e.target.value, 10))}
               className="compression-select"
             >
-              <option value={90}>90° (Clockwise)</option>
-              <option value={180}>180° (Upside Down)</option>
-              <option value={270}>270° (Counter-clockwise)</option>
+              <option value={90}>90 degrees (Clockwise)</option>
+              <option value={180}>180 degrees (Upside Down)</option>
+              <option value={270}>270 degrees (Counter-clockwise)</option>
             </select>
           </div>
         )}
@@ -378,19 +413,47 @@ const ConverterTool = ({
           </div>
         )}
 
+        {isTranslate && (
+          <div className="page-range-selector">
+            <div className="form-group">
+              <label htmlFor="source-language">Source Language:</label>
+              <input
+                type="text"
+                id="source-language"
+                value={sourceLanguage}
+                onChange={(e) => setSourceLanguage(e.target.value || "auto")}
+                placeholder="auto"
+                className="watermark-input"
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="target-language">Target Language:</label>
+              <input
+                type="text"
+                id="target-language"
+                value={targetLanguage}
+                onChange={(e) => setTargetLanguage(e.target.value)}
+                placeholder="English"
+                className="watermark-input"
+                required
+              />
+            </div>
+          </div>
+        )}
+
         {isMerge && files.length > 0 && (
           <div className="file-list">
             <h4>Selected Files ({files.length}):</h4>
             <ul>
-              {files.map((file, index) => (
-                <li key={index} className="file-item">
-                  <span>{file.name}</span>
+              {files.map((selectedFile, index) => (
+                <li key={`${selectedFile.name}-${index}`} className="file-item">
+                  <span>{selectedFile.name}</span>
                   <button
                     type="button"
                     onClick={() => removeFile(index)}
                     className="remove-button"
                   >
-                    ✕
+                    Remove
                   </button>
                 </li>
               ))}
@@ -398,67 +461,25 @@ const ConverterTool = ({
           </div>
         )}
 
-        <button
-          type="submit"
-          disabled={
-            (isMerge ? files.length < 2 : !file) ||
-            loading ||
-            (isSplit && (startPage < 1 || endPage < startPage)) ||
-            (isProtect && (!password || password.length < 3)) ||
-            (isWatermark &&
-              (!watermarkText || watermarkText.trim().length === 0))
-          }
-          className="convert-button"
-        >
-          {loading
-            ? isMerge
-              ? "Merging..."
-              : isCompress
-              ? "Compressing..."
-              : isSplit
-              ? "Splitting..."
-              : isRotate
-              ? "Rotating..."
-              : isProtect
-              ? "Protecting..."
-              : isWatermark
-              ? "Adding Watermark..."
-              : type === "pdf-to-text"
-              ? "Extracting..."
-              : isPdfToImage || type === "pdf-to-image"
-              ? "Extracting Image..."
-              : "Converting..."
-            : isMerge
-            ? "Merge PDFs"
-            : isCompress
-            ? "Compress PDF"
-            : isSplit
-            ? "Split PDF"
-            : isRotate
-            ? "Rotate PDF"
-            : isProtect
-            ? "Protect PDF"
-            : isWatermark
-            ? "Add Watermark"
-            : type === "pdf-to-text"
-            ? "Extract Text"
-            : isPdfToImage || type === "pdf-to-image"
-            ? "Extract Image"
-            : "Convert"}
+        <button type="submit" disabled={isSubmitDisabled} className="convert-button">
+          {submitLabel}
         </button>
       </form>
 
       {message && (
-        <div
-          className={`message ${
-            message.includes("✅")
-              ? "success"
-              : message.includes("⚠️")
-              ? "warning"
-              : "error"
-          }`}
-        >
+        <div className={`message ${message.toLowerCase().includes("successful") ? "success" : "error"}`}>
           {message}
+        </div>
+      )}
+
+      {isTranslate && translatedText && (
+        <div className="converter-form" style={{ marginTop: "1.5rem" }}>
+          <h3>Translated Text</h3>
+          <textarea
+            readOnly
+            value={translatedText}
+            style={{ width: "100%", minHeight: "260px", padding: "1rem", resize: "vertical" }}
+          />
         </div>
       )}
     </div>
@@ -466,4 +487,3 @@ const ConverterTool = ({
 };
 
 export default ConverterTool;
-

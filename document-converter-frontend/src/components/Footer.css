@@ -170,6 +170,20 @@
   margin-top: 0.5rem !important;
 }
 
+.footer-company-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 0.75rem;
+  color: #a9d4ff;
+  font-size: 0.8rem;
+  text-decoration: none;
+  transition: color 0.25s ease;
+}
+
+.footer-company-link:hover { color: #fff; }
+.footer-company-mark { width: 23px; height: 18px; background: #fff; border-radius: 3px; padding: 0.1rem; }
+
 /* Tablet */
 @media (max-width: 1024px) {
   .footer {

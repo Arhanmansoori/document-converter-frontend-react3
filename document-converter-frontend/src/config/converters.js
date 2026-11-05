@@ -1,4 +1,4 @@
-// Central configuration for all conversion tools
+﻿// Central configuration for all conversion tools
 export const CONVERTERS = [
   {
     slug: "word-to-pdf",
@@ -26,6 +26,15 @@ export const CONVERTERS = [
     description: "Convert Excel spreadsheets to PDF with perfect formatting",
     accept: ".xlsx,.xls",
     endpoint: "/convert/excel-to-pdf",
+  },
+  {
+    slug: "csv-to-parquet",
+    type: "csv-to-parquet",
+    icon: "🧮",
+    title: "CSV to Parquet",
+    description: "Convert CSV files into Parquet format for analytics workflows",
+    accept: ".csv",
+    endpoint: "/convert/csv-to-parquet",
   },
   {
     slug: "pdf-to-image-pdf",
@@ -74,6 +83,25 @@ export const CONVERTERS = [
     description: "Convert PDF documents to editable Word format",
     accept: ".pdf",
     endpoint: "/convert/pdf-to-word",
+  },
+  {
+    slug: "pdf-to-powerpoint",
+    type: "pdf-to-powerpoint",
+    icon: "📽️",
+    title: "PDF to PowerPoint",
+    description: "Convert PDF pages into an editable PowerPoint presentation",
+    accept: ".pdf",
+    endpoint: "/convert/pdf-to-powerpoint",
+  },
+  {
+    slug: "translate-pdf",
+    type: "translate-pdf",
+    icon: "🌍",
+    title: "Translate PDF",
+    description: "Use AI to translate PDF text from any language into your chosen language",
+    accept: ".pdf",
+    endpoint: "/translate-pdf",
+    isTranslate: true,
   },
   {
     slug: "image-to-pdf",
@@ -137,4 +165,3 @@ export const CONVERTERS = [
 
 export const findConverterBySlug = (slug) =>
   CONVERTERS.find((c) => c.slug === slug);
-

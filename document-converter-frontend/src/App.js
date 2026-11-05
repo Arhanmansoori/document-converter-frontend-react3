@@ -1,4 +1,4 @@
-// AI assisted development
+﻿// AI assisted development
 import React, { useEffect } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 import "./App.css";
@@ -23,12 +23,7 @@ function AppRoutes() {
       <div id="hero"></div>
       <Routes>
         <Route path="/" element={<HomePage />} />
-        <Route
-          path="/tool/:slug"
-          element={
-            <ToolRouteWrapper />
-          }
-        />
+        <Route path="/tool/:slug" element={<ToolRouteWrapper />} />
       </Routes>
       <Footer />
       <BackendStatus />
@@ -65,6 +60,7 @@ function ToolRouteWrapper() {
       isProtect={converter.isProtect || false}
       isWatermark={converter.isWatermark || false}
       isPdfToImage={converter.isPdfToImage || false}
+      isTranslate={converter.isTranslate || false}
     />
   );
 }
